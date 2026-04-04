@@ -1,0 +1,239 @@
+/* ── Feed page layout ─────────────────────────────────────────────────────────
+   CSS-driven responsive layout. Media queries are authoritative.
+   Both .feed-desktop and .feed-mobile are in the DOM simultaneously;
+   CSS decides which is visible. No JS viewport detection needed.
+   ────────────────────────────────────────────────────────────────────────── */
+
+.feed-root {
+  width: 100%;
+  min-height: 100dvh;
+  background: var(--c-bg);
+}
+
+/* ── Desktop layout ───────────────────────────────────────────────────────── */
+.feed-desktop {
+  display: flex;
+  width: 100%;
+  min-height: 100dvh;
+}
+
+.feed-sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  align-self: flex-start;    /* required for sticky to work in flex containers */
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  overflow-y: auto;
+  border-right: 1px solid var(--c-border);
+  padding: 40px 24px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 40px;
+}
+
+.feed-main {
+  flex: 1;
+  min-width: 0;
+  padding: 40px;
+  box-sizing: border-box;
+}
+
+/* ── Mobile layout ────────────────────────────────────────────────────────── */
+.feed-mobile {
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 40px 24px;
+  box-sizing: border-box;
+}
+
+.feed-mobile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.feed-mobile-header-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* ── Responsive switching ─────────────────────────────────────────────────── */
+/* Default: desktop shown, mobile hidden */
+.feed-mobile { display: none; }
+
+@media (max-width: 899px) {
+  .feed-desktop { display: none; }
+  .feed-mobile  { display: block; }
+}
+
+/* ── Sidebar sections ─────────────────────────────────────────────────────── */
+.feed-sidebar-brand-name {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--c-accent);
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.feed-sidebar-brand-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--c-text-faint);
+  margin: 4px 0 0;
+}
+
+.feed-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.feed-sidebar-controls {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Sidebar button ───────────────────────────────────────────────────────── */
+.sidebar-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--c-text-muted);
+  cursor: default;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  padding: 4px 8px;
+  text-align: left;
+  width: 100%;
+}
+
+.sidebar-btn.active {
+  background: var(--c-surface);
+  border-color: var(--c-border);
+  color: var(--c-text);
+}
+
+.sidebar-btn.clickable {
+  cursor: pointer;
+}
+
+.sidebar-btn.clickable:hover {
+  background: var(--c-surface-hover);
+}
+
+/* ── Icon buttons ─────────────────────────────────────────────────────────── */
+.icon-btn {
+  background: none;
+  border: 1px solid var(--c-border);
+  border-radius: 4px;
+  color: var(--c-text-faint);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 4px 8px;
+}
+
+.icon-btn:hover { border-color: var(--c-text-muted); }
+.icon-btn.danger { color: var(--c-danger); }
+
+/* ── Stats block ──────────────────────────────────────────────────────────── */
+.stats-section-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--c-text-faint);
+  margin: 0 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.stats-streak-number {
+  font-family: var(--font-mono);
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.stats-streak-number.active   { color: var(--c-accent); }
+.stats-streak-number.inactive { color: var(--c-text-faint); }
+
+.stats-streak-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--c-text-faint);
+  margin-top: 2px;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.stats-grid-item-value {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--c-text);
+}
+
+.stats-grid-item-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--c-text-faint);
+}
+
+/* ── Topics ───────────────────────────────────────────────────────────────── */
+.topics-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.topic-item {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--c-text-muted);
+  padding: 3px 0;
+}
+
+/* ── Mobile brand ─────────────────────────────────────────────────────────── */
+.mobile-brand-name {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--c-accent);
+  margin: 0;
+  letter-spacing: -0.5px;
+}
+
+.mobile-brand-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--c-text-faint);
+  margin: 4px 0 0;
+}
+
+/* ── Mobile stats strip ───────────────────────────────────────────────────── */
+.mobile-stats-strip {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--c-border);
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.mobile-stats-item         { color: var(--c-text-faint); }
+.mobile-stats-item.highlight { color: var(--c-accent); }
+
+.feed-content { margin-top: 24px; }

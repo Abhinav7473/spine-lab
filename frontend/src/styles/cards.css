@@ -1,0 +1,198 @@
+/* ── Paper cards ─────────────────────────────────────────────────────────────
+   PaperCard, FeaturedCard, DepthBar.
+   Colors via CSS custom properties — theme switching is free.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* ── Standard paper card ─────────────────────────────────────────────────── */
+.paper-card {
+  position: relative;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  padding: 24px 24px calc(24px + 3px);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.paper-card:hover { background: var(--c-surface-hover); }
+
+.paper-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.paper-card-badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.paper-card-page-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--c-text-faint);
+  margin-left: auto;
+}
+
+.paper-card-title {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.paper-card-title.read { color: var(--c-text-muted); }
+.paper-card-title.unread { color: var(--c-text); }
+
+.paper-card-abstract {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--c-text-muted);
+  line-height: 1.65;
+}
+
+.paper-card-meta {
+  display: flex;
+  gap: 16px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--c-text-faint);
+}
+
+/* ── Depth bar ────────────────────────────────────────────────────────────── */
+.depth-bar-track {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--c-border);
+  border-radius: 0 0 8px 8px;
+  overflow: hidden;
+}
+
+.depth-bar-fill {
+  height: 100%;
+  transition: width 0.4s ease;
+}
+
+.depth-bar-fill.done    { background: var(--c-accent); }
+.depth-bar-fill.reading { background: var(--c-accent-dim); }
+.depth-bar-fill.faint   { background: var(--c-text-faint); }
+
+/* ── Hero / featured card ─────────────────────────────────────────────────── */
+.hero-card {
+  position: relative;
+  background: var(--c-surface);
+  border: 1px solid var(--c-accent);
+  border-radius: 12px;
+  padding: 40px 40px calc(40px + 3px);
+  transition: border-color 0.2s ease;
+}
+
+.hero-card:hover { border-color: var(--c-accent-dim); }
+
+.hero-card-label-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.hero-card-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--c-accent);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  flex-shrink: 0;
+}
+
+.hero-card-divider {
+  flex: 1;
+  height: 1px;
+  background: var(--c-border);
+}
+
+.hero-card-page-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--c-text-faint);
+  flex-shrink: 0;
+}
+
+.hero-card-reason {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--c-text-faint);
+  margin: 0 0 16px;
+}
+
+.hero-card-title {
+  margin: 0 0 16px;
+  font-family: var(--font-sans);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--c-text);
+  line-height: 1.3;
+  cursor: pointer;
+}
+
+.hero-card-title:hover { color: var(--c-text-muted); }
+
+.hero-card-abstract-wrap { margin: 0 0 24px; }
+
+.hero-card-abstract {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  color: var(--c-text-muted);
+  line-height: 1.75;
+}
+
+.hero-card-expand-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--c-accent);
+  padding: 4px 0;
+  margin-top: 4px;
+  display: block;
+}
+
+.hero-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.hero-card-footer-badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.hero-card-footer-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--c-text-faint);
+}
+
+.hero-card-cta {
+  padding-top: 16px;
+  border-top: 1px solid var(--c-border);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--c-accent);
+  cursor: pointer;
+}

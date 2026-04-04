@@ -1,0 +1,40 @@
+/* ── Reader page layout ───────────────────────────────────────────────────────
+   Full-width reading experience. Content column is capped for readability
+   but the page background extends edge-to-edge.
+   ────────────────────────────────────────────────────────────────────────── */
+
+.reader-root {
+  width: 100%;
+  min-height: 100dvh;
+  background: var(--c-bg);
+}
+
+.reader-container {
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 40px;
+  box-sizing: border-box;
+}
+
+.reader-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.reader-nav-right {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.reader-mode-switcher-mobile {
+  margin-bottom: 40px;
+}
+
+/* Tight padding on small screens */
+@media (max-width: 599px) {
+  .reader-container { padding: 24px 16px; }
+}

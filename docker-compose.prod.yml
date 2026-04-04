@@ -1,0 +1,7 @@
+# Production overrides — use with:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build
+
+services:
+  app:
+    build:
+      target: production

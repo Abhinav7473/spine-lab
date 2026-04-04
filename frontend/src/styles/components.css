@@ -1,0 +1,109 @@
+/* ── Shared UI components ─────────────────────────────────────────────────────
+   Badge, Card, SectionLabel, FeedList states.
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* ── Badge ───────────────────────────────────────────────────────────────── */
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.badge.default {
+  background: var(--c-border);
+  color: var(--c-text-muted);
+}
+
+.badge.accent {
+  background: var(--c-accent-dim);
+  color: var(--c-accent-fg);
+}
+
+/* ── Card ────────────────────────────────────────────────────────────────── */
+.card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  padding: 24px;
+}
+
+.card.clickable {
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.card.clickable:hover { background: var(--c-surface-hover); }
+
+/* ── Section label (feed dividers) ──────────────────────────────────────── */
+.section-label {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 24px 0 16px;
+}
+
+.section-label-text {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--c-text-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  flex-shrink: 0;
+}
+
+.section-label-line {
+  flex: 1;
+  height: 1px;
+  background: var(--c-border);
+}
+
+.section-label-sub {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--c-text-faint);
+  flex-shrink: 0;
+}
+
+/* ── Cold start banner ───────────────────────────────────────────────────── */
+.cold-start-banner {
+  border-left: 2px solid var(--c-accent);
+  padding-left: 16px;
+  margin-bottom: 24px;
+}
+
+.cold-start-text {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--c-text-faint);
+  margin: 0;
+  line-height: 1.6;
+}
+
+/* ── Feed list ───────────────────────────────────────────────────────────── */
+.paper-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.feed-error {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--c-danger);
+}
+
+.feed-empty {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--c-text-faint);
+}

@@ -1,0 +1,39 @@
+import { useCallback } from 'react'
+import { api } from '../utils/api'
+import { useFeedStore } from '../stores/feed-store'
+import { useUserStore } from '../stores/user-store'
+
+export function useFeed() {
+  const {
+    hero, queue, missed, newPapers, stats,
+    coldStart, sessionsUntilReranking,
+    loading, error,
+    setFeed, setLoading, setError,
+  } = useFeedStore()
+
+  const { userId } = useUserStore()
+
+  const loadFeed = useCallback(async () => {
+    if (!userId) return
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await api.get(`/feed/${userId}`)
+      setFeed(data)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
+  }, [userId, setFeed, setLoading, setError])
+
+  const totalCount = [hero, ...queue, ...missed, ...newPapers].filter(Boolean).length
+
+  return {
+    hero, queue, missed, newPapers, stats,
+    coldStart, sessionsUntilReranking,
+    totalCount,
+    loading, error,
+    loadFeed,
+  }
+}

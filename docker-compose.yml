@@ -1,0 +1,33 @@
+# Everything on port 8000. FastAPI serves the built frontend as static files.
+#
+# Usage:
+#   docker compose up --build              → development build (hot-reload)
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up --build  → production
+#   docker compose watch                   → backend hot-reload (frontend changes need rebuild)
+
+services:
+  app:
+    build:
+      context: .
+      target: development
+    env_file: .env
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    develop:
+      watch:
+        - action: sync          # uvicorn --reload picks up backend changes instantly
+          path: ./backend/app
+          target: /app/app
+        - action: rebuild       # frontend or dep changes need a full rebuild
+          path: ./frontend/src
+        - action: rebuild
+          path: ./backend/requirements.txt
+        - action: rebuild
+          path: ./frontend/package.json
