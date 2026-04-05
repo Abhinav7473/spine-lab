@@ -1,7 +1,4 @@
-/* ── Reader page layout ───────────────────────────────────────────────────────
-   Full-width reading experience. Content column is capped for readability
-   but the page background extends edge-to-edge.
-   ────────────────────────────────────────────────────────────────────────── */
+/* ── Reader page layout ────────────────────────────────────────────────────── */
 
 .reader-root {
   width: 100%;
@@ -11,30 +8,208 @@
 
 .reader-container {
   width: 100%;
-  max-width: 860px;
+  max-width: 740px;
   margin: 0 auto;
-  padding: 40px;
+  padding: 32px 40px;
   box-sizing: border-box;
 }
 
+/* Full paper mode: remove max-width constraint so PDF fills the viewport */
+.reader-container--full {
+  max-width: 100%;
+  padding: 32px 0 0;
+}
+
+/* ── Nav bar ────────────────────────────────────────────────────────────────── */
 .reader-nav {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: 32px;
+  padding: 0 40px;
 }
 
-.reader-nav-right {
+.reader-container--full .reader-nav { padding: 0 32px 0; }
+
+.reader-nav-back {
+  background: none;
+  border: none;
+  color: var(--c-text-faint);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 0;
+}
+.reader-nav-back:hover { color: var(--c-text-muted); }
+
+.reader-nav-done {
+  background: none;
+  border: 1px solid var(--c-border);
+  border-radius: 5px;
+  color: var(--c-text-muted);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 5px 12px;
+  transition: border-color 0.15s, color 0.15s;
+}
+.reader-nav-done:hover { border-color: var(--c-accent); color: var(--c-accent); }
+
+/* ── Mode tabs ──────────────────────────────────────────────────────────────── */
+.reader-mode-tabs {
+  display: flex;
+  border: 1px solid var(--c-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.reader-mode-tab {
+  background: none;
+  border: none;
+  color: var(--c-text-faint);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 5px 14px;
+  transition: background 0.12s, color 0.12s;
+}
+
+.reader-mode-tab + .reader-mode-tab {
+  border-left: 1px solid var(--c-border);
+}
+
+.reader-mode-tab.active {
+  background: var(--c-surface);
+  color: var(--c-text);
+}
+
+.reader-mode-tab:not(.active):hover {
+  background: var(--c-surface);
+  color: var(--c-text-muted);
+}
+
+/* ── Scroll container ───────────────────────────────────────────────────────── */
+.paper-reader-scroll {
+  overflow-y: auto;
+}
+
+/* ── Skim mode ──────────────────────────────────────────────────────────────── */
+.skim-root {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.skim-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--c-text-faint);
+  flex-wrap: wrap;
+}
+
+.skim-meta-dot { color: var(--c-border); }
+
+.skim-title {
+  font-family: var(--font-sans);
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--c-text);
+  line-height: 1.35;
+  margin: 0;
+}
+
+.skim-claim-block {
+  border-left: 3px solid var(--c-accent);
+  padding: 16px 20px;
+  background: color-mix(in srgb, var(--c-accent) 6%, var(--c-bg));
+  border-radius: 0 6px 6px 0;
+}
+
+.skim-claim-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--c-accent);
+  margin: 0 0 10px;
+}
+
+.skim-claim-text {
+  font-family: var(--font-sans);
+  font-size: 17px;
+  line-height: 1.75;
+  color: var(--c-text);
+  margin: 0;
+}
+
+.skim-categories {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
+}
+
+.skim-category {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--c-text-faint);
+  border: 1px solid var(--c-border);
+  border-radius: 4px;
+  padding: 3px 8px;
+}
+
+.skim-actions {
+  display: flex;
   align-items: center;
+  gap: 16px;
+  padding-top: 8px;
 }
 
-.reader-mode-switcher-mobile {
-  margin-bottom: 40px;
+.skim-read-full-btn {
+  background: var(--c-accent);
+  border: none;
+  border-radius: 6px;
+  color: #000;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px 20px;
+  transition: opacity 0.15s, transform 0.1s;
+  box-shadow: 0 2px 14px color-mix(in srgb, var(--c-accent) 35%, transparent);
+}
+.skim-read-full-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+
+.skim-arxiv-link {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--c-text-faint);
+  text-decoration: none;
+}
+.skim-arxiv-link:hover { color: var(--c-accent); }
+
+/* ── Full paper (PDF iframe) ────────────────────────────────────────────────── */
+.reader-pdf-frame {
+  width: 100%;
+  height: calc(100dvh - 88px);   /* viewport minus nav bar */
+  border: none;
+  display: block;
 }
 
-/* Tight padding on small screens */
+/* ── Error state ────────────────────────────────────────────────────────────── */
+.reader-not-found {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--c-danger);
+  padding: 40px;
+}
+
+/* ── Mobile ─────────────────────────────────────────────────────────────────── */
 @media (max-width: 599px) {
-  .reader-container { padding: 24px 16px; }
+  .reader-container { padding: 20px 16px; }
+  .reader-nav { padding: 0; margin-bottom: 20px; }
+  .skim-title { font-size: 20px; }
+  .skim-claim-text { font-size: 15px; }
 }

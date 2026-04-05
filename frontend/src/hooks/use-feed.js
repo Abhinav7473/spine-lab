@@ -5,7 +5,7 @@ import { useUserStore } from '../stores/user-store'
 
 export function useFeed() {
   const {
-    hero, queue, missed, newPapers, stats,
+    recommendations, unread, stats,
     coldStart, sessionsUntilReranking,
     loading, error,
     setFeed, setLoading, setError,
@@ -27,10 +27,10 @@ export function useFeed() {
     }
   }, [userId, setFeed, setLoading, setError])
 
-  const totalCount = [hero, ...queue, ...missed, ...newPapers].filter(Boolean).length
+  const totalCount = recommendations.length + unread.length
 
   return {
-    hero, queue, missed, newPapers, stats,
+    recommendations, unread, stats,
     coldStart, sessionsUntilReranking,
     totalCount,
     loading, error,

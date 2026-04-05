@@ -1,0 +1,51 @@
+/* ── Toast notifications ───────────────────────────────────────────────────── */
+
+.toast-stack {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 9000;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: all;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  min-width: 220px;
+  max-width: 360px;
+  user-select: none;
+}
+
+.toast-icon {
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.toast-msg {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--c-text);
+  line-height: 1.5;
+}
+
+/* Type tints via a subtle left border */
+.toast--info    { border-left: 3px solid var(--c-accent);   }
+.toast--success { border-left: 3px solid var(--c-success);  }
+.toast--warn    { border-left: 3px solid var(--c-warn);     }
+.toast--error   { border-left: 3px solid var(--c-danger);   }
+
+.toast--success .toast-icon { color: var(--c-success); }
+.toast--warn    .toast-icon { color: var(--c-warn); }
+.toast--error   .toast-icon { color: var(--c-danger); }
+.toast--info    .toast-icon { color: var(--c-accent); }
+
+@media (max-width: 599px) {
+  .toast-stack { bottom: 16px; right: 16px; left: 16px; }
+  .toast { max-width: 100%; }
+}

@@ -1,18 +1,64 @@
-import { useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useFeed } from '../hooks/use-feed'
 import { useUser } from '../hooks/use-user'
 import { useUserStore } from '../stores/user-store'
 import { useAccessStore } from '../stores/access-store'
 import { useTheme } from '../components/ui/theme-provider'
-import { FeedList } from '../components/feed/feed-list'
+import { FeedList, RecommendationsPanel, RecsCarousel } from '../components/feed/feed-list'
+import { StreakCalendar } from '../components/feed/streak-calendar'
 import '../styles/feed.css'
+
+const QUEUE_PAGE_SIZE = 5
+
+// ── Resizable column divider ───────────────────────────────────────────────────
+// Updates a CSS custom property on the grid container so no re-render is needed
+// on every mousemove.
+function useResizableDivider(cssVar, initialPx, minPx = 180, maxPx = 600) {
+  const gridRef   = useRef(null)
+  const dragging  = useRef(false)
+  const startX    = useRef(0)
+  const startW    = useRef(initialPx)
+  const currentW  = useRef(initialPx)
+
+  const onMouseDown = useCallback((e) => {
+    e.preventDefault()
+    dragging.current = true
+    startX.current   = e.clientX
+    startW.current   = currentW.current
+    document.body.style.cursor    = 'col-resize'
+    document.body.style.userSelect = 'none'
+  }, [])
+
+  useEffect(() => {
+    const onMove = (e) => {
+      if (!dragging.current || !gridRef.current) return
+      const w = Math.min(maxPx, Math.max(minPx, startW.current + (e.clientX - startX.current)))
+      currentW.current = w
+      gridRef.current.style.setProperty(cssVar, `${w}px`)
+    }
+    const onUp = () => {
+      if (!dragging.current) return
+      dragging.current = false
+      document.body.style.cursor    = ''
+      document.body.style.userSelect = ''
+    }
+    document.addEventListener('mousemove', onMove)
+    document.addEventListener('mouseup',   onUp)
+    return () => {
+      document.removeEventListener('mousemove', onMove)
+      document.removeEventListener('mouseup',   onUp)
+    }
+  }, [cssVar, minPx, maxPx])
+
+  return { gridRef, onMouseDown }
+}
 
 const DEFAULT_SEED_TOPICS = ['transformer', 'diffusion models', 'reinforcement learning']
 
 export function FeedPage() {
   const {
-    hero, queue, missed, newPapers, stats,
+    recommendations, unread, stats,
     coldStart, sessionsUntilReranking,
     totalCount, loading, error, loadFeed,
   } = useFeed()
@@ -31,23 +77,83 @@ export function FeedPage() {
     if (userId) loadFeed()
   }, [userId]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const feedProps = { hero, queue, missed, newPapers, coldStart, sessionsUntilReranking, loading, error }
+  // ── Desktop: shared page state for both columns ────────────────────────────
+  const [desktopPage, setDesktopPage] = useState(0)
+  const totalQueuePages = Math.ceil(unread.length / QUEUE_PAGE_SIZE)
+  const totalPages = Math.max(totalQueuePages, 1)
+
+  function goPrev() { setDesktopPage(p => Math.max(0, p - 1)) }
+  function goNext() { setDesktopPage(p => Math.min(totalPages - 1, p + 1)) }
+
+  const recProps   = { recommendations, coldStart, sessionsUntilReranking, loading }
+  const queueProps = { unread, loading, error }
+
+  // Resizable dividers
+  const sidebar = useResizableDivider('--sidebar-w', 240, 160, 320)
+  const recCol  = useResizableDivider('--rec-w',     380, 260, 520)
+
+  // Share the same gridRef between both hooks (sidebar.gridRef is canonical)
+  // by wiring recCol's handlers to the same element
+  const desktopRef = useCallback((el) => {
+    sidebar.gridRef.current = el
+    recCol.gridRef.current  = el
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const recIndex = Math.min(desktopPage, Math.max(recommendations.length - 1, 0))
 
   return (
     <div className="feed-root">
-      {/* Desktop — hidden below 900px via CSS */}
-      <div className="feed-desktop">
+      {/* Desktop — 3 columns: sidebar | recommendations | queue */}
+      <div className="feed-desktop" ref={desktopRef}>
         <DesktopSidebar
-          totalCount={totalCount} stats={stats}
+          totalCount={totalCount} stats={stats} userId={userId}
           role={role} mode={mode} toggle={toggle}
           navigate={navigate} clearAccess={clearAccess}
         />
-        <main className="feed-main">
-          <FeedList {...feedProps} />
-        </main>
+
+        {/* Divider 1: sidebar ↔ recs */}
+        <div
+          className="resize-divider"
+          style={{ left: 'calc(var(--sidebar-w) - 3px)' }}
+          onMouseDown={sidebar.onMouseDown}
+        />
+
+        <div className="feed-recommendations">
+          <RecommendationsPanel
+            {...recProps}
+            page={desktopPage} totalPages={totalPages}
+            onPrev={goPrev} onNext={goNext}
+          />
+        </div>
+
+        {/* Divider 2: recs ↔ queue */}
+        <div
+          className="resize-divider"
+          style={{ left: 'calc(var(--sidebar-w) + var(--rec-w) - 3px)' }}
+          onMouseDown={recCol.onMouseDown}
+        />
+
+        <div className="feed-queue">
+          <FeedList {...queueProps} page={desktopPage} totalPages={totalPages} hideControls />
+        </div>
+
+        {/* Shared footer — spans recs + queue columns */}
+        <div className="feed-footer">
+          <span className="feed-footer-info">
+            {recommendations.length > 0 && `pick ${recIndex + 1}/${recommendations.length}`}
+          </span>
+          <div className="page-controls">
+            <button className="page-btn" onClick={goPrev} disabled={desktopPage === 0}>←</button>
+            <span className="page-label">{desktopPage + 1} / {totalPages}</span>
+            <button className="page-btn" onClick={goNext} disabled={desktopPage >= totalPages - 1}>→</button>
+          </div>
+          <span className="feed-footer-info" style={{ textAlign: 'right' }}>
+            {unread.length > 0 && `${unread.length} unread`}
+          </span>
+        </div>
       </div>
 
-      {/* Mobile — hidden above 900px via CSS */}
+      {/* Mobile — stacked: header, stats, carousel, queue */}
       <div className="feed-mobile">
         <MobileHeader
           totalCount={totalCount} role={role}
@@ -55,7 +161,8 @@ export function FeedPage() {
         />
         {stats && <MobileStatsStrip stats={stats} />}
         <div className="feed-content">
-          <FeedList {...feedProps} />
+          <RecsCarousel {...recProps} />
+          <FeedList {...queueProps} />
         </div>
       </div>
     </div>
@@ -63,28 +170,27 @@ export function FeedPage() {
 }
 
 // ── Desktop sidebar ────────────────────────────────────────────────────────────
-function DesktopSidebar({ totalCount, stats, role, mode, toggle, navigate, clearAccess }) {
+function DesktopSidebar({ totalCount, stats, userId, role, mode, toggle, navigate, clearAccess }) {
   return (
     <aside className="feed-sidebar">
 
-      {/* Brand */}
       <div className="feed-sidebar-brand">
         <h1 className="feed-sidebar-brand-name">spine</h1>
         <p className="feed-sidebar-brand-count">{totalCount} papers</p>
       </div>
 
-      {/* Nav */}
       <nav className="feed-sidebar-nav">
         <SidebarBtn label="Feed" active />
+        <SidebarBtn label="Settings" clickable onClick={() => navigate('/settings')} />
         {role === 'dev' && (
           <SidebarBtn label="Admin" clickable onClick={() => navigate('/admin')} />
         )}
       </nav>
 
-      {/* Stats */}
       {stats && <StatsBlock stats={stats} />}
 
-      {/* Topics */}
+      {userId && <StreakCalendar userId={userId} />}
+
       <div>
         <p className="stats-section-label">Topics</p>
         <div className="topics-list">
@@ -94,7 +200,6 @@ function DesktopSidebar({ totalCount, stats, role, mode, toggle, navigate, clear
         </div>
       </div>
 
-      {/* Controls */}
       <div className="feed-sidebar-controls">
         <button onClick={toggle} className="icon-btn">
           {mode === 'dark' ? '☀ light' : '☾ dark'}
@@ -161,10 +266,10 @@ function StatsBlock({ stats }) {
 function MobileStatsStrip({ stats }) {
   const { streak, papers_started, papers_deep, papers_done } = stats
   const items = [
-    streak > 0         ? `${streak}d streak`         : null,
-    papers_started > 0 ? `${papers_started} read`    : null,
-    papers_deep    > 0 ? `${papers_deep} deep`        : null,
-    papers_done    > 0 ? `${papers_done} done`        : null,
+    streak > 0         ? `${streak}d streak`      : null,
+    papers_started > 0 ? `${papers_started} read`  : null,
+    papers_deep    > 0 ? `${papers_deep} deep`      : null,
+    papers_done    > 0 ? `${papers_done} done`      : null,
   ].filter(Boolean)
 
   if (items.length === 0) return null

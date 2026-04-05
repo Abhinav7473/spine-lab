@@ -18,15 +18,20 @@ export const useSessionStore = create((set, get) => ({
   totalIdleMs:   0,      // accumulated milliseconds where user was not reading
   idleStartedAt: null,   // Date.now() when current idle period started; null = active
 
+  completed: false,   // set to true only when user explicitly clicks "done reading"
+
   startSession: (sessionId, paperId) => set({
     sessionId,
     paperId,
     startedAt:     Date.now(),
     eventBuffer:   [],
     stayedInApp:   true,
+    completed:     false,
     totalIdleMs:   0,
     idleStartedAt: null,
   }),
+
+  markCompleted: () => set({ completed: true }),
 
   pushEvent: (event) => set((state) => ({
     eventBuffer: [...state.eventBuffer, event],
@@ -53,6 +58,7 @@ export const useSessionStore = create((set, get) => ({
     startedAt:     null,
     eventBuffer:   [],
     stayedInApp:   true,
+    completed:     false,
     totalIdleMs:   0,
     idleStartedAt: null,
   }),

@@ -24,6 +24,7 @@ class EventPayload(BaseModel):
 
 class SessionClose(BaseModel):
     stayed_in_app: bool = True
+    completed: bool = False           # True only when user explicitly clicks "done reading"
     reached_past_abstract: bool = False
     total_dwell_secs: int
     max_scroll_depth: float           # 0.0 – 1.0
@@ -89,6 +90,7 @@ async def close_session(session_id: UUID, body: SessionClose, db: AsyncSession =
         signal.max_scroll_depth = best_scroll
         signal.sections_visited = list(set((signal.sections_visited or []) + body.sections_visited))
         signal.stayed_in_app    = body.stayed_in_app
+        signal.completed        = signal.completed or body.completed  # never un-complete
         signal.last_read_at     = datetime.now(timezone.utc)
     else:
         cumulative_dwell = body.total_dwell_secs
@@ -100,6 +102,7 @@ async def close_session(session_id: UUID, body: SessionClose, db: AsyncSession =
             max_scroll_depth=best_scroll,
             sections_visited=body.sections_visited,
             stayed_in_app=body.stayed_in_app,
+            completed=body.completed,
             last_read_at=datetime.now(timezone.utc),
         )
         db.add(signal)

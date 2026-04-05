@@ -14,7 +14,7 @@ from sqlalchemy import func, select
 from app.core.config import settings
 from app.core.database import SessionLocal
 from app.models import Paper
-from app.routers import access, admin, feed, papers, sessions, users
+from app.routers import access, admin, auth, feed, papers, sessions, users
 from app.services.arxiv import bulk_upsert_papers, fetch_papers
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -80,6 +80,7 @@ app.add_middleware(
 # ── API routes ────────────────────────────────────────────────────────────────
 app.include_router(access.router,   prefix="/api")
 app.include_router(admin.router,    prefix="/api")
+app.include_router(auth.router,     prefix="/api")
 app.include_router(users.router,    prefix="/api")
 app.include_router(feed.router,     prefix="/api")
 app.include_router(sessions.router, prefix="/api")

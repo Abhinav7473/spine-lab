@@ -87,7 +87,26 @@
 .paper-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 0;
+}
+
+/* Zebra — very subtle alternating tint on unread queue rows */
+.paper-list > *:nth-child(even) .paper-card {
+  background: color-mix(in srgb, var(--c-surface) 55%, var(--c-bg));
+}
+
+.paper-list > * + * .paper-card {
+  border-top: none;
+  border-radius: 0;
+}
+
+.paper-list > *:first-child .paper-card {
+  border-radius: 8px 8px 0 0;
+}
+
+.paper-list > *:last-child .paper-card {
+  border-radius: 0 0 8px 8px;
+  border-top: none;
 }
 
 .skeleton-list {

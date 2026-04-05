@@ -10,17 +10,24 @@
   background: var(--c-bg);
 }
 
-/* ── Desktop layout ───────────────────────────────────────────────────────── */
+/* ── Desktop layout — 3 columns + shared footer ─────────────────────────────
+   grid-template-columns is set via --sidebar-w / --rec-w CSS vars so
+   ResizeDivider can update them at runtime without a re-render.
+   ────────────────────────────────────────────────────────────────────────── */
 .feed-desktop {
-  display: flex;
+  --sidebar-w: 240px;
+  --rec-w: 380px;
+  display: grid;
+  grid-template-columns: var(--sidebar-w) var(--rec-w) 1fr;
+  grid-template-rows: 1fr auto;
   width: 100%;
   min-height: 100dvh;
 }
 
 .feed-sidebar {
-  width: 240px;
-  flex-shrink: 0;
-  align-self: flex-start;    /* required for sticky to work in flex containers */
+  grid-column: 1;
+  grid-row: 1 / 3;             /* span both rows so footer doesn't push it */
+  align-self: flex-start;
   position: sticky;
   top: 0;
   height: 100dvh;
@@ -33,20 +40,160 @@
   gap: 40px;
 }
 
-.feed-main {
-  flex: 1;
-  min-width: 0;
-  padding: 40px;
+.feed-recommendations {
+  grid-column: 2;
+  grid-row: 1;
+  border-right: 1px solid var(--c-border);
+  padding: 40px 32px 16px;
   box-sizing: border-box;
+  overflow-y: auto;
+}
+
+.feed-queue {
+  grid-column: 3;
+  grid-row: 1;
+  padding: 40px 32px 16px;
+  box-sizing: border-box;
+  overflow-y: auto;
+}
+
+/* ── Shared pagination footer ─────────────────────────────────────────────── */
+.feed-footer {
+  grid-column: 2 / 4;
+  grid-row: 2;
+  position: sticky;
+  bottom: 0;
+  background: var(--c-bg);
+  border-top: 1px solid var(--c-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  padding: 10px 32px;
+  z-index: 10;
+}
+
+.feed-footer-info {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--c-text-faint);
+  min-width: 80px;
+}
+
+.feed-footer-info:last-child { text-align: right; }
+
+/* ── Resize dividers ──────────────────────────────────────────────────────── */
+/* Rendered as a thin absolute overlay on the column border */
+.resize-divider {
+  position: absolute;
+  top: 0;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 20;
+  background: transparent;
+}
+
+.resize-divider:hover,
+.resize-divider.dragging {
+  background: color-mix(in srgb, var(--c-accent) 25%, transparent);
+}
+
+/* ── Desktop recommendations panel ───────────────────────────────────────── */
+.recs-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* ── Shared pagination controls ───────────────────────────────────────────── */
+.page-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0 8px;
+}
+
+.page-btn {
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 4px;
+  color: var(--c-text-muted);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1;
+  padding: 6px 12px;
+  transition: border-color 0.12s, color 0.12s;
+}
+.page-btn:not(:disabled):hover { border-color: var(--c-accent); color: var(--c-accent); }
+.page-btn:disabled { opacity: 0.3; cursor: default; }
+
+.page-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--c-text-faint);
+  flex: 1;
+  text-align: center;
+}
+
+/* ── Mobile looping carousel ──────────────────────────────────────────────── */
+.recs-carousel-wrap {
+  margin-bottom: 32px;
+}
+
+.recs-carousel-stage {
+  position: relative;
+  overflow: hidden;
+  height: 420px;         /* tall enough for a FeaturedCard */
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.recs-carousel-card {
+  position: absolute;
+  width: 82%;
+  top: 0;
+  left: 9%;              /* centers the 82%-wide card */
+  transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+              opacity   0.4s ease;
+  will-change: transform, opacity;
+}
+
+.recs-carousel-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.recs-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  border: none;
+  background: var(--c-border);
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.2s, transform 0.2s;
+}
+.recs-dot.active {
+  background: var(--c-accent);
+  transform: scale(1.3);
 }
 
 /* ── Mobile layout ────────────────────────────────────────────────────────── */
 .feed-mobile {
   width: 100%;
-  max-width: 680px;
+  max-width: 600px;
   margin: 0 auto;
-  padding: 40px 24px;
+  padding: 24px 16px;
   box-sizing: border-box;
+}
+
+.feed-mobile .recs-panel {
+  margin-bottom: 32px;
 }
 
 .feed-mobile-header {
@@ -66,7 +213,7 @@
 /* Default: desktop shown, mobile hidden */
 .feed-mobile { display: none; }
 
-@media (max-width: 899px) {
+@media (max-width: 1099px) {
   .feed-desktop { display: none; }
   .feed-mobile  { display: block; }
 }

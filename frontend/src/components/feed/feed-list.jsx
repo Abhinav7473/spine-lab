@@ -1,6 +1,9 @@
-import { PaperCard, FeaturedCard } from './paper-card'
+import { useState, useEffect } from 'react'
+import { FeaturedCard, PaperCard } from './paper-card'
 import { PaperCardSkeleton } from '../ui/skeleton'
 import '../../styles/components.css'
+
+const QUEUE_PAGE_SIZE = 5
 
 function SectionLabel({ label, sublabel }) {
   return (
@@ -24,61 +27,169 @@ function ColdStartBanner({ sessionsLeft }) {
   )
 }
 
-export function FeedList({ hero, queue, missed, newPapers, coldStart, sessionsUntilReranking, loading, error }) {
+// Page controls — used only in mobile unread queue (desktop uses shared footer)
+function PageControls({ page, totalPages, onPrev, onNext }) {
+  if (totalPages <= 1) return null
+  return (
+    <div className="page-controls">
+      <button className="page-btn" onClick={onPrev} disabled={page === 0}>←</button>
+      <span className="page-label">{page + 1} / {totalPages}</span>
+      <button className="page-btn" onClick={onNext} disabled={page >= totalPages - 1}>→</button>
+    </div>
+  )
+}
+
+// ── Looping recommendations carousel (mobile) ─────────────────────────────────
+// Transform-based: all 3 cards always in DOM, active=center, prev/next visible
+// behind with reduced opacity + scale. Auto-advances every 5s. Loops infinitely.
+export function RecsCarousel({ recommendations, coldStart, sessionsUntilReranking, loading }) {
+  const [active, setActive] = useState(0)
+  const total = recommendations.length
+
+  // Auto-advance
+  useEffect(() => {
+    if (total < 2) return
+    const t = setInterval(() => setActive(a => (a + 1) % total), 5000)
+    return () => clearInterval(t)
+  }, [total])
+
+  function cardStyle(index) {
+    if (total === 0) return {}
+    // Signed distance from active, wrapped into [-floor, +ceil]
+    let d = ((index - active) % total + total) % total
+    if (d > Math.floor(total / 2)) d -= total   // e.g. for 3 cards: 0, +1, -1
+    const tx   = d * 82                          // % offset per card
+    const scale = d === 0 ? 1 : 0.88
+    const opacity = d === 0 ? 1 : 0.38
+    const z = d === 0 ? 2 : 1
+    return {
+      transform:  `translateX(${tx}%) scale(${scale})`,
+      opacity,
+      zIndex:     z,
+      cursor:     d !== 0 ? 'pointer' : 'default',
+    }
+  }
+
   if (loading) {
     return (
-      <div className="skeleton-list">
-        <PaperCardSkeleton featured />
-        {Array.from({ length: 4 }, (_, i) => <PaperCardSkeleton key={i} />)}
+      <div className="recs-carousel-wrap">
+        <div className="recs-carousel-stage">
+          <div className="recs-carousel-card" style={{ opacity: 1, transform: 'translateX(0) scale(1)', zIndex: 2 }}>
+            <PaperCardSkeleton featured />
+          </div>
+        </div>
       </div>
     )
   }
 
-  if (error) {
-    return <p className="feed-error">{error}</p>
+  if (total === 0) return null
+
+  return (
+    <div className="recs-carousel-wrap">
+      {coldStart && sessionsUntilReranking > 0 && (
+        <ColdStartBanner sessionsLeft={sessionsUntilReranking} />
+      )}
+      <div className="recs-carousel-stage">
+        {recommendations.map((p, i) => (
+          <div
+            key={p.id}
+            className="recs-carousel-card"
+            style={cardStyle(i)}
+            onClick={() => i !== active && setActive(i)}
+          >
+            <FeaturedCard paper={p} />
+          </div>
+        ))}
+      </div>
+      <div className="recs-carousel-dots">
+        {recommendations.map((_, i) => (
+          <button
+            key={i}
+            className={`recs-dot ${i === active ? 'active' : ''}`}
+            onClick={() => setActive(i)}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ── Desktop recommendations panel (1 card at a time, controlled externally) ──
+export function RecommendationsPanel({
+  recommendations, coldStart, sessionsUntilReranking, loading,
+  page, totalPages, onPrev, onNext,
+}) {
+  if (loading) {
+    return (
+      <div className="recs-panel">
+        <PaperCardSkeleton featured />
+      </div>
+    )
   }
 
-  if (!hero && newPapers.length === 0) {
+  if (recommendations.length === 0) return null
+
+  const recIndex  = Math.min(page, recommendations.length - 1)
+  const current   = recommendations[recIndex]
+
+  return (
+    <div className="recs-panel">
+      {coldStart && sessionsUntilReranking > 0 && (
+        <ColdStartBanner sessionsLeft={sessionsUntilReranking} />
+      )}
+      <SectionLabel label="Curated for you" sublabel={`${recIndex + 1} of ${recommendations.length}`} />
+      <FeaturedCard paper={current} />
+      <PageControls
+        page={page}
+        totalPages={totalPages}
+        onPrev={onPrev}
+        onNext={onNext}
+        label={`page ${page + 1} of ${totalPages}`}
+      />
+    </div>
+  )
+}
+
+// ── Unread queue (desktop: controlled externally; mobile: self-paginating) ────
+export function FeedList({
+  unread, loading, error,
+  // Desktop controlled mode — pass these to override internal pagination
+  page: externalPage, totalPages: externalTotal,
+  onPrev: externalPrev, onNext: externalNext,
+  hideControls = false,   // desktop passes true — footer owns the controls
+}) {
+  const [internalPage, setInternalPage] = useState(0)
+
+  const isControlled  = externalPage !== undefined
+  const page          = isControlled ? externalPage       : internalPage
+  const totalPages    = isControlled ? externalTotal       : Math.ceil((unread ?? []).length / QUEUE_PAGE_SIZE)
+  const handlePrev    = isControlled ? externalPrev        : () => setInternalPage(p => Math.max(0, p - 1))
+  const handleNext    = isControlled ? externalNext        : () => setInternalPage(p => Math.min(totalPages - 1, p + 1))
+
+  const slice = (unread ?? []).slice(page * QUEUE_PAGE_SIZE, (page + 1) * QUEUE_PAGE_SIZE)
+
+  if (loading) {
     return (
-      <p className="feed-empty">
-        No papers yet — check back in a moment while the feed seeds from ArXiv.
-      </p>
+      <div className="skeleton-list">
+        {Array.from({ length: QUEUE_PAGE_SIZE }, (_, i) => <PaperCardSkeleton key={i} />)}
+      </div>
     )
+  }
+
+  if (error) return <p className="feed-error">{error}</p>
+
+  if ((unread ?? []).length === 0) {
+    return <p className="feed-empty">All caught up — check back later for new papers.</p>
   }
 
   return (
     <div>
-      {coldStart && sessionsUntilReranking > 0 && (
-        <ColdStartBanner sessionsLeft={sessionsUntilReranking} />
-      )}
-
-      {hero && <FeaturedCard paper={hero} />}
-
-      {queue.length > 0 && (
-        <div>
-          <SectionLabel label="Jump back in" sublabel={`${queue.length} in progress`} />
-          <div className="paper-list">
-            {queue.map(p => <PaperCard key={p.id} paper={p} />)}
-          </div>
-        </div>
-      )}
-
-      {missed.length > 0 && (
-        <div>
-          <SectionLabel label="Opened, didn't finish" sublabel="pick up where you left off" />
-          <div className="paper-list">
-            {missed.map(p => <PaperCard key={p.id} paper={p} />)}
-          </div>
-        </div>
-      )}
-
-      {newPapers.length > 0 && (
-        <div>
-          <SectionLabel label="Discover" sublabel={`${newPapers.length} unread`} />
-          <div className="paper-list">
-            {newPapers.map(p => <PaperCard key={p.id} paper={p} />)}
-          </div>
-        </div>
+      <SectionLabel label="Unread" sublabel={`${(unread ?? []).length} papers`} />
+      <div className="paper-list">
+        {slice.map(p => <PaperCard key={p.id} paper={p} />)}
+      </div>
+      {!hideControls && (
+        <PageControls page={page} totalPages={totalPages} onPrev={handlePrev} onNext={handleNext} />
       )}
     </div>
   )

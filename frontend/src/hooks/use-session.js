@@ -7,13 +7,14 @@ import { getScrollDepth, getVisibleSection } from '../utils/signal'
 const SCROLL_THROTTLE_MS = 2000
 const IDLE_THRESHOLD_MS  = 2 * 60 * 1000   // 2 min without scroll → idle
 
-export function useSession(paperId, containerRef) {
+export function useSession(paperId, containerRef, onScrollDepth) {
   const { userId } = useUserStore()
   const {
     sessionId, startSession, pushEvent,
     markLeftApp, clearSession, getDwellSeconds,
     pauseIdle, resumeActive,
   } = useSessionStore()
+  // NOTE: `completed` is read directly from store state at close time, not from hook state
 
   // Two separate refs with distinct responsibilities:
   //   lastScrollAt    — updated on EVERY scroll event (used by idle watcher)
@@ -77,8 +78,10 @@ export function useSession(paperId, containerRef) {
           .filter(([, secs]) => secs > 0)
       )
 
+      const storeState = useSessionStore.getState()
       const payload = {
-        stayed_in_app:         useSessionStore.getState().stayedInApp,
+        stayed_in_app:         storeState.stayedInApp,
+        completed:             storeState.completed,
         reached_past_abstract: maxScrollDepth.current > 0.15,
         total_dwell_secs:      getDwellSeconds(),
         max_scroll_depth:      maxScrollDepth.current,
@@ -129,6 +132,7 @@ export function useSession(paperId, containerRef) {
       const section = getVisibleSection(el)
 
       maxScrollDepth.current = Math.max(maxScrollDepth.current, depth)
+      onScrollDepth?.(maxScrollDepth.current)
 
       // Track section transitions for per-section dwell
       if (section !== currentSection.current) {

@@ -1,0 +1,92 @@
+/* ── GitHub-style activity calendar ───────────────────────────────────────── */
+
+.streak-cal {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.streak-cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.streak-cal-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--c-text-faint);
+}
+
+.streak-cal-ranges {
+  display: flex;
+  gap: 2px;
+}
+
+.streak-range-btn {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: var(--c-text-faint);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 2px 5px;
+  transition: all 0.12s;
+}
+
+.streak-range-btn:hover { color: var(--c-text-muted); }
+
+.streak-range-btn.active {
+  border-color: var(--c-border);
+  color: var(--c-accent);
+}
+
+/* ── Grid ──────────────────────────────────────────────────────────────────── */
+.streak-cal-grid {
+  display: flex;
+  gap: 3px;
+  overflow: hidden;
+}
+
+.streak-week {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.streak-day {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  cursor: default;
+  transition: opacity 0.1s;
+}
+
+.streak-day:hover { opacity: 0.75; }
+
+/* Intensity levels */
+.streak-day.level-empty { background: transparent; }
+.streak-day.level-0     { background: var(--c-border); }
+.streak-day.level-1     { background: color-mix(in srgb, var(--c-accent) 30%, var(--c-border)); }
+.streak-day.level-2     { background: color-mix(in srgb, var(--c-accent) 52%, var(--c-border)); }
+.streak-day.level-3     { background: color-mix(in srgb, var(--c-accent) 74%, var(--c-border)); }
+.streak-day.level-4     { background: var(--c-accent); }
+
+/* ── Tooltip + summary ─────────────────────────────────────────────────────── */
+.streak-cal-tooltip {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--c-text-muted);
+  margin: 0;
+  height: 14px;
+}
+
+.streak-cal-total {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--c-text-faint);
+  margin: 0;
+}

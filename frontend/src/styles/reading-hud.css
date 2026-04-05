@@ -1,0 +1,87 @@
+/* ── Reading HUD — floating glass timer overlay ───────────────────────────── */
+
+.reading-hud {
+  position: fixed;
+  top: 80px;
+  right: 24px;
+  z-index: 200;
+  padding: 14px 18px;
+  min-width: 130px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: none;   /* doesn't block clicks on the paper */
+}
+
+.hud-timer {
+  font-family: var(--font-mono);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--c-accent);
+  line-height: 1;
+  letter-spacing: -0.5px;
+}
+
+.hud-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--c-text-faint);
+}
+
+.hud-divider {
+  height: 1px;
+  background: rgba(var(--c-glass-border), 0.12);
+  margin: 2px 0;
+}
+
+.hud-depth-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.hud-depth-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--c-text-muted);
+  min-width: 28px;
+}
+
+.hud-depth-track {
+  flex: 1;
+  height: 3px;
+  background: rgba(var(--c-glass-border), 0.12);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.hud-depth-fill {
+  height: 100%;
+  background: var(--c-accent);
+  border-radius: 2px;
+  transition: width 0.5s ease;
+}
+
+.hud-section {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--c-text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 160px;
+}
+
+/* On mobile / small screens, tuck it into a corner compactly */
+@media (max-width: 599px) {
+  .reading-hud {
+    top: auto;
+    bottom: 20px;
+    right: 16px;
+    padding: 10px 14px;
+    min-width: 0;
+  }
+  .hud-section { display: none; }
+}

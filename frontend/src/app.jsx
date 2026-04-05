@@ -1,16 +1,17 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { ThemeProvider } from './components/ui/theme-provider'
 import { useAccessStore } from './stores/access-store'
-import { AccessPage }  from './pages/access-page'
-import { FeedPage }    from './pages/feed-page'
-import { ReaderPage }  from './pages/reader-page'
-import { AdminPage }   from './pages/admin-page'
+import { LoginPage }    from './pages/login-page'
+import { FeedPage }     from './pages/feed-page'
+import { ReaderPage }   from './pages/reader-page'
+import { AdminPage }    from './pages/admin-page'
+import { SettingsPage } from './pages/settings-page'
+import { Toasts }       from './components/ui/toasts'
 
-// Gate — renders children only if a valid access role is stored.
-// Otherwise shows the access code entry screen.
-function AccessGuard({ children }) {
+// Gate — shows the login page until a valid access role is stored.
+function AuthGuard({ children }) {
   const { role } = useAccessStore()
-  if (!role) return <AccessPage />
+  if (!role) return <Navigate to="/login" replace />
   return children
 }
 
@@ -24,14 +25,15 @@ function DevGuard({ children }) {
 export function App() {
   return (
     <ThemeProvider>
+      <Toasts />
       <BrowserRouter>
-        <AccessGuard>
-          <Routes>
-            <Route path="/"              element={<FeedPage />} />
-            <Route path="/read/:paperId" element={<ReaderPage />} />
-            <Route path="/admin"         element={<DevGuard><AdminPage /></DevGuard>} />
-          </Routes>
-        </AccessGuard>
+        <Routes>
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/" element={<AuthGuard><FeedPage /></AuthGuard>} />
+          <Route path="/read/:paperId" element={<AuthGuard><ReaderPage /></AuthGuard>} />
+          <Route path="/settings" element={<AuthGuard><SettingsPage /></AuthGuard>} />
+          <Route path="/admin" element={<AuthGuard><DevGuard><AdminPage /></DevGuard></AuthGuard>} />
+        </Routes>
       </BrowserRouter>
     </ThemeProvider>
   )

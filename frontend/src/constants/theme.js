@@ -17,36 +17,45 @@ export const colors = {
 }
 
 // ── Themes ────────────────────────────────────────────────────────────────────
-// Dark: deep navy-black base — easier on eyes for long reading than pure black.
-// Accent is the same punchy lime (#c8f542) — it's the brand.
+// Dark: One Dark / Claude-inspired charcoal — warm-neutral, not pitch black.
+// Background is ~#1e2028, giving enough depth without harsh contrast.
+// Accent is brand lime; works well on the lifted background.
 export const darkTheme = {
-  '--c-bg':           '#0c0d11',
-  '--c-surface':      '#14151c',
-  '--c-surface-hover':'#1c1e2a',
-  '--c-border':       '#252838',
-  '--c-text':         '#dde1ed',
-  '--c-text-muted':   '#7880a0',
-  '--c-text-faint':   '#4a5068',
-  '--c-accent':       '#c8f542',
-  '--c-accent-dim':   '#8aab28',
-  '--c-accent-fg':    '#000000',
-  '--c-danger':       '#f87171',
+  '--c-bg':            '#1e2028',
+  '--c-surface':       '#252831',
+  '--c-surface-hover': '#2d3040',
+  '--c-border':        '#353848',
+  '--c-text':          '#c8ccdc',
+  '--c-text-muted':    '#7a7f9a',
+  '--c-text-faint':    '#484e66',
+  '--c-accent':        '#c8f542',
+  '--c-accent-dim':    'rgba(200,245,66,0.18)',
+  '--c-accent-fg':     '#161820',
+  '--c-danger':        '#f87171',
+  '--c-warn':          '#fbbf24',
+  '--c-success':       '#4ade80',
+  // Glass layer values (used in glass.css)
+  '--c-glass-bg':      '30,32,44',   // RGB for rgba()
+  '--c-glass-border':  '255,255,255',
 }
 
 // Light: warm paper-white — for daytime / bright environments.
-// Accent becomes deep olive to keep the green DNA readable on white.
 export const lightTheme = {
-  '--c-bg':           '#f8f8f4',
-  '--c-surface':      '#ffffff',
-  '--c-surface-hover':'#f1f1ec',
-  '--c-border':       '#deded6',
-  '--c-text':         '#18181e',
-  '--c-text-muted':   '#606078',
-  '--c-text-faint':   '#a0a0b8',
-  '--c-accent':       '#4a7000',
-  '--c-accent-dim':   '#355200',
-  '--c-accent-fg':    '#ffffff',
-  '--c-danger':       '#dc2626',
+  '--c-bg':            '#f6f6f2',
+  '--c-surface':       '#ffffff',
+  '--c-surface-hover': '#f0f0eb',
+  '--c-border':        '#dcdcd4',
+  '--c-text':          '#1a1a22',
+  '--c-text-muted':    '#5c5c78',
+  '--c-text-faint':    '#9898b0',
+  '--c-accent':        '#4a7000',
+  '--c-accent-dim':    'rgba(74,112,0,0.12)',
+  '--c-accent-fg':     '#ffffff',
+  '--c-danger':        '#dc2626',
+  '--c-warn':          '#d97706',
+  '--c-success':       '#16a34a',
+  '--c-glass-bg':      '240,240,235',
+  '--c-glass-border':  '0,0,0',
 }
 
 export const spacing = {

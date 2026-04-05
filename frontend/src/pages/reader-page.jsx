@@ -1,24 +1,24 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { PaperReader } from '../components/reader/paper-reader'
-import { ReadingNudge } from '../components/reader/reading-nudge'
 import { ReadingModeSwitcher } from '../components/reader/reading-mode-switcher'
+import { ReadingNudge } from '../components/reader/reading-nudge'
+import { ReadingHud } from '../components/reader/reading-hud'
 import { ReaderSkeleton } from '../components/ui/skeleton'
-import { Button } from '../components/ui/button'
-import { useIsDesktop } from '../hooks/use-viewport'
+import { useSessionStore } from '../stores/session-store'
 import { api } from '../utils/api'
-import { colors, typography, spacing } from '../constants/theme'
 import '../styles/reader.css'
 
 export function ReaderPage() {
   const { paperId } = useParams()
   const navigate    = useNavigate()
-  const isDesktop   = useIsDesktop()
 
-  const [paper,     setPaper]     = useState(null)
-  const [loading,   setLoading]   = useState(true)
-  const [showNudge, setShowNudge] = useState(false)
-  const [mode,      setMode]      = useState('full')
+  const [paper,        setPaper]        = useState(null)
+  const [loading,      setLoading]      = useState(true)
+  const [showNudge,    setShowNudge]    = useState(false)
+  const [mode,         setMode]         = useState('skim')
+  const [scrollDepth,  setScrollDepth]  = useState(0)
+  const { markCompleted } = useSessionStore()
 
   useEffect(() => {
     api.get(`/papers/${paperId}`)
@@ -32,9 +32,7 @@ export function ReaderPage() {
   if (!paper) {
     return (
       <div className="reader-root">
-        <p style={{ color: colors.danger, fontFamily: typography.fontMono, padding: spacing.xl }}>
-          Paper not found.
-        </p>
+        <p className="reader-not-found">Paper not found.</p>
       </div>
     )
   }
@@ -51,23 +49,21 @@ export function ReaderPage() {
 
   return (
     <div className="reader-root">
-      <div className="reader-container">
+      <div className={`reader-container ${mode === 'full' ? 'reader-container--full' : ''}`}>
 
         <nav className="reader-nav">
-          <Button variant="ghost" onClick={() => navigate('/')}>← feed</Button>
-          <div className="reader-nav-right">
-            {isDesktop && <ReadingModeSwitcher mode={mode} onChange={setMode} compact />}
-            <Button variant="primary" onClick={() => setShowNudge(true)}>done reading</Button>
-          </div>
+          <button className="reader-nav-back" onClick={() => navigate('/')}>← feed</button>
+          <ReadingModeSwitcher mode={mode} onChange={setMode} />
+          <button
+            className="reader-nav-done"
+            onClick={() => { markCompleted(); setShowNudge(true) }}
+          >
+            ✓ done
+          </button>
         </nav>
 
-        {!isDesktop && (
-          <div className="reader-mode-switcher-mobile">
-            <ReadingModeSwitcher mode={mode} onChange={setMode} />
-          </div>
-        )}
-
-        <PaperReader paper={paper} mode={mode} />
+        <PaperReader paper={paper} mode={mode} onModeChange={setMode} onScrollDepth={setScrollDepth} />
+        <ReadingHud scrollDepth={scrollDepth} />
 
       </div>
     </div>

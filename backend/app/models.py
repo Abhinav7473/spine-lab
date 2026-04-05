@@ -28,9 +28,13 @@ class Paper(Base):
 class User(Base):
     __tablename__ = "users"
 
-    id           = Column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
-    seed_topics  = Column(ARRAY(Text), nullable=False)
-    created_at   = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    id             = Column(UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid())
+    seed_topics    = Column(ARRAY(Text), nullable=False)
+    email          = Column(String, unique=True, nullable=True)
+    oauth_provider = Column(String(20), nullable=True)   # 'google' | 'github'
+    oauth_sub      = Column(String, nullable=True)        # provider's stable user ID
+    preferences    = Column(JSONB, nullable=False, server_default='{}')
+    created_at     = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
 
 class UserAccess(Base):
@@ -78,6 +82,7 @@ class PaperSignal(Base):
     sections_visited = Column(ARRAY(Text), nullable=False, default=list)
     stayed_in_app    = Column(Boolean, nullable=False, default=True)
     signal_score     = Column(Float)
+    completed        = Column(Boolean, nullable=False, default=False)  # explicit "done reading"
     last_read_at     = Column(TIMESTAMP(timezone=True), server_default=func.now())
 
 

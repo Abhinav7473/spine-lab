@@ -1,10 +1,8 @@
 import { create } from 'zustand'
 
 export const useFeedStore = create((set) => ({
-  hero:                    null,
-  queue:                   [],
-  missed:                  [],
-  newPapers:               [],
+  recommendations:         [],
+  unread:                  [],
   stats:                   null,
   coldStart:               true,
   sessionsUntilReranking:  5,
@@ -12,10 +10,8 @@ export const useFeedStore = create((set) => ({
   error:                   null,
 
   setFeed: (data) => set({
-    hero:                   data.hero,
-    queue:                  data.queue,
-    missed:                 data.missed,
-    newPapers:              data.new,
+    recommendations:        data.recommendations,
+    unread:                 data.unread,
     stats:                  data.stats,
     coldStart:              data.cold_start,
     sessionsUntilReranking: data.sessions_until_reranking ?? 0,

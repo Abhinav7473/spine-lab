@@ -43,17 +43,14 @@ class StatsOut(BaseModel):
 class FeedResponse(BaseModel):
     cold_start:               bool
     sessions_until_reranking: int
-    hero:   PaperOut | None
-    queue:  list[PaperOut]
-    missed: list[PaperOut]
-    new:    list[PaperOut]
-    stats:  StatsOut
+    recommendations:          list[PaperOut]  # max 3: algo | affinity | explore
+    unread:                   list[PaperOut]  # unseen papers, newest first
+    stats:                    StatsOut
+
 
 # ── Read-status thresholds ────────────────────────────────────────────────────
-# These classify each paper into a section of the feed.
-_DEPTH_DONE     = 0.85   # ≥ this → paper is complete, move out of main feed
 _DEPTH_READING  = 0.15   # ≥ this → read past abstract ("in progress")
-_DWELL_SKIMMED  = 60     # seconds — below this + low scroll = user barely touched it
+_DWELL_SKIMMED  = 60     # seconds — below this + low scroll = barely touched
 
 
 @router.get("/{user_id}", response_model=FeedResponse)
@@ -63,17 +60,15 @@ async def get_feed(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Returns a structured feed with four named sections:
+    Returns curated recommendations (max 3) and the full unread queue.
 
-      hero   — one paper: highest-signal in-progress, or newest unseen
-      queue  — up to 3: in-progress papers the user has already engaged with
-      missed — up to 2: papers the user opened briefly and never returned to
-      new    — rest: unseen papers, newest first
-
-    Also returns per-user stats (streak, read counts) for the sidebar.
+    Recommendations:
+      1. Best match — highest-signal in-progress paper, or top unseen (algo)
+      2. Affinity   — unseen paper sharing categories with user's most-read topic
+      3. Explore    — unseen paper from a category outside the user's history
 
     Cold start (< MIN_SESSIONS_FOR_RERANKING):
-      Feed collapses to hero + new only. No behavioral ranking yet.
+      First 3 newest papers become recommendations; rest go to unread queue.
     """
     user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
     if not user:
@@ -86,84 +81,113 @@ async def get_feed(
     stats = await _compute_stats(db, user_id)
     in_cold_start = session_count < settings.min_sessions_reranking
 
-    if in_cold_start:
-        result = await db.execute(
-            select(Paper).order_by(Paper.published_at.desc()).limit(limit)
-        )
-        all_papers = result.scalars().all()
-        papers = [_fmt(p, None, reason="latest in your topics") for p in all_papers]
-        return {
-            "cold_start":               True,
-            "sessions_until_reranking": settings.min_sessions_reranking - session_count,
-            "hero":   papers[0] if papers else None,
-            "queue":  [],
-            "missed": [],
-            "new":    papers[1:],
-            "stats":  stats,
-        }
-
-    # ── Categorize papers the user has signals for ────────────────────────────
-    rows = (await db.execute(
+    # ── Fetch papers the user has seen ───────────────────────────────────────
+    seen_rows = (await db.execute(
         select(Paper, PaperSignal)
         .join(PaperSignal, (PaperSignal.paper_id == Paper.id) & (PaperSignal.user_id == user_id))
     )).all()
 
-    done, in_progress, skimmed = [], [], []
+    seen_ids = [row.Paper.id for row in seen_rows]
 
-    for row in rows:
-        p, sig = row.Paper, row.PaperSignal
-        if sig.max_scroll_depth >= _DEPTH_DONE:
-            reason = "completed"
-        elif sig.max_scroll_depth >= _DEPTH_READING:
-            reason = "you were reading this"
-        else:
-            reason = "matched your reading pattern"
-        formatted = _fmt(p, sig.signal_score, sig.max_scroll_depth, sig.total_dwell_secs, reason=reason)
-        if sig.max_scroll_depth >= _DEPTH_DONE:
-            done.append(formatted)
-        elif sig.max_scroll_depth >= _DEPTH_READING:
-            in_progress.append(formatted)
-        elif sig.total_dwell_secs < _DWELL_SKIMMED:
-            skimmed.append(formatted)
-        else:
-            # Spent time but didn't scroll — audio mode or focused on top section
-            in_progress.append(formatted)
-
-    in_progress.sort(key=lambda p: p["signal_score"] or 0, reverse=True)
-    skimmed.sort(    key=lambda p: p["signal_score"] or 0)
-
-    # ── Unseen papers ─────────────────────────────────────────────────────────
-    seen_ids = [row.Paper.id for row in rows]
+    # ── Fetch unseen papers (newest first) ───────────────────────────────────
     unseen_q = select(Paper).order_by(Paper.published_at.desc()).limit(limit)
     if seen_ids:
         unseen_q = unseen_q.where(Paper.id.not_in(seen_ids))
-    unseen = [_fmt(p, None, reason="new in your topics") for p in (await db.execute(unseen_q)).scalars().all()]
+    unseen_papers = (await db.execute(unseen_q)).scalars().all()
 
-    # ── Assemble sections ─────────────────────────────────────────────────────
-    missed = skimmed[:2]
+    if in_cold_start:
+        unseen = [_fmt(p, None, reason="latest in your topics") for p in unseen_papers]
+        return {
+            "cold_start":               True,
+            "sessions_until_reranking": settings.min_sessions_reranking - session_count,
+            "recommendations":          unseen[:3],
+            "unread":                   unseen[3:],
+            "stats":                    stats,
+        }
 
+    # ── Categorize seen papers (exclude explicitly completed) ─────────────────
+    in_progress = []
+    for row in seen_rows:
+        p, sig = row.Paper, row.PaperSignal
+        if sig.completed:
+            continue
+        if sig.max_scroll_depth >= _DEPTH_READING or sig.total_dwell_secs >= _DWELL_SKIMMED:
+            in_progress.append((p, sig))
+
+    in_progress.sort(key=lambda x: x[1].signal_score or 0, reverse=True)
+
+    # ── Build 3 recommendations ───────────────────────────────────────────────
+    recommendations = []
+    used_ids: set = set()
+
+    # Rec 1 — Best match: highest-signal in-progress, or top unseen
     if in_progress:
-        hero  = in_progress[0]
-        queue = in_progress[1:4]       # up to 3 more
-    elif unseen:
-        hero   = unseen[0]
-        unseen = unseen[1:]
-        queue  = []
-    else:
-        hero  = None
-        queue = []
+        p, sig = in_progress[0]
+        recommendations.append(_fmt(
+            p, sig.signal_score, sig.max_scroll_depth, sig.total_dwell_secs,
+            reason="pick up where you left off",
+        ))
+        used_ids.add(p.id)
+    elif unseen_papers:
+        p = unseen_papers[0]
+        recommendations.append(_fmt(p, None, reason="top pick for you"))
+        used_ids.add(p.id)
 
-    used = 1 + len(queue) + len(missed)
-    new  = unseen[: max(0, limit - used)]
+    # Rec 2 — Affinity: most common category in user's reading history
+    user_cats: list[str] = []
+    for row in seen_rows:
+        p, sig = row.Paper, row.PaperSignal
+        if p.categories and (sig.signal_score or 0) > 0:
+            user_cats.extend(p.categories)
+
+    if user_cats:
+        cat_counts: dict[str, int] = {}
+        for c in user_cats:
+            cat_counts[c] = cat_counts.get(c, 0) + 1
+        top_cat = max(cat_counts, key=lambda c: cat_counts[c])
+
+        affinity_candidates = [
+            p for p in unseen_papers
+            if p.id not in used_ids and p.categories and top_cat in p.categories
+        ]
+        if affinity_candidates:
+            p = affinity_candidates[0]
+            recommendations.append(_fmt(p, None, reason=f"more like what you read — {top_cat}"))
+            used_ids.add(p.id)
+
+    # Rec 3 — Explore: paper from a category outside the user's history
+    if user_cats:
+        explored_cats = set(user_cats)
+        explore_candidates = [
+            p for p in unseen_papers
+            if p.id not in used_ids
+            and p.categories
+            and not any(c in explored_cats for c in p.categories)
+        ]
+        if explore_candidates:
+            p = explore_candidates[0]
+            main_cat = p.categories[0]
+            recommendations.append(_fmt(p, None, reason=f"explore — {main_cat}"))
+            used_ids.add(p.id)
+
+    # Fill remaining slots from unseen if needed
+    if len(recommendations) < 3:
+        for p in unseen_papers:
+            if p.id not in used_ids:
+                recommendations.append(_fmt(p, None, reason="new in your topics"))
+                used_ids.add(p.id)
+            if len(recommendations) == 3:
+                break
+
+    # ── Unread queue — everything not surfaced as a recommendation ────────────
+    unread = [_fmt(p, None) for p in unseen_papers if p.id not in used_ids]
 
     return {
         "cold_start":               False,
         "sessions_until_reranking": 0,
-        "hero":   hero,
-        "queue":  queue,
-        "missed": missed,
-        "new":    new,
-        "stats":  stats,
+        "recommendations":          recommendations,
+        "unread":                   unread,
+        "stats":                    stats,
     }
 
 
@@ -171,7 +195,7 @@ async def get_feed(
 
 async def _compute_stats(db: AsyncSession, user_id: UUID) -> dict:
     rows = (await db.execute(
-        select(PaperSignal.max_scroll_depth, PaperSignal.total_dwell_secs)
+        select(PaperSignal.max_scroll_depth, PaperSignal.total_dwell_secs, PaperSignal.completed)
         .where(PaperSignal.user_id == user_id)
     )).all()
 
@@ -179,7 +203,7 @@ async def _compute_stats(db: AsyncSession, user_id: UUID) -> dict:
         "streak":         await _compute_streak(db, user_id),
         "papers_started": len(rows),
         "papers_deep":    sum(1 for r in rows if r.max_scroll_depth >= _DEPTH_READING),
-        "papers_done":    sum(1 for r in rows if r.max_scroll_depth >= _DEPTH_DONE),
+        "papers_done":    sum(1 for r in rows if r.completed),
     }
 
 
@@ -196,7 +220,6 @@ async def _compute_streak(db: AsyncSession, user_id: UUID) -> int:
         return 0
 
     today = date.today()
-    # Streak breaks if most recent session was more than 1 day ago
     if (today - dates[0]).days > 1:
         return 0
 
@@ -213,8 +236,6 @@ async def _compute_streak(db: AsyncSession, user_id: UUID) -> int:
 def _fmt(paper: Paper, score, scroll_depth=None, dwell_secs=None, reason=None) -> dict:
     if scroll_depth is None:
         read_status = "new"
-    elif scroll_depth >= _DEPTH_DONE:
-        read_status = "done"
     elif scroll_depth >= _DEPTH_READING:
         read_status = "reading"
     else:

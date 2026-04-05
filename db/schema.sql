@@ -36,10 +36,11 @@ CREATE INDEX idx_papers_categories   ON papers USING GIN (categories);
 -- ─────────────────────────────────────────────
 
 CREATE TABLE users (
-    id           UUID  PRIMARY KEY DEFAULT gen_random_uuid(),
-    seed_topics  TEXT[] NOT NULL,   -- cold start; declared on onboarding
-    created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+    id          UUID   PRIMARY KEY DEFAULT gen_random_uuid(),
+    seed_topics TEXT[] NOT NULL,   -- cold start; declared on onboarding
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+-- Auth + preferences columns added 2026-04 — see ALTER TABLE log at the bottom.
 
 
 -- ─────────────────────────────────────────────
@@ -97,6 +98,7 @@ CREATE TABLE paper_signals (
     -- computed by the application layer on session close, stored here for fast feed queries
     signal_score     FLOAT,
     last_read_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+    -- completed column added 2026-04 — see ALTER TABLE log at the bottom.
     PRIMARY KEY (user_id, paper_id)
 );
 
@@ -181,3 +183,47 @@ CREATE TABLE IF NOT EXISTS paper_tags (
 CREATE INDEX IF NOT EXISTS idx_paper_tags_paper ON paper_tags (paper_id);
 CREATE INDEX IF NOT EXISTS idx_paper_tags_type  ON paper_tags (tag_type);
 
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- ALTER TABLE migration log
+-- Applied against the live DB after initial deploy.
+-- Run each block individually in the Supabase SQL editor.
+-- Never re-run the CREATE TABLE statements above — they are the original schema.
+-- ─────────────────────────────────────────────────────────────────────────────
+
+-- ── 2026-04-05  paper_signals: explicit completion flag ───────────────────────
+-- completed = TRUE only when the user explicitly clicks "done reading".
+-- NOT inferred from scroll depth — skim mode makes 100% scroll a false positive.
+-- Applied: yes
+--
+-- ALTER TABLE paper_signals
+--     ADD COLUMN IF NOT EXISTS completed BOOLEAN NOT NULL DEFAULT FALSE;
+
+
+-- ── 2026-04-05  section_signals: new table ────────────────────────────────────
+-- Per (user, paper, section) dwell aggregation. Written on session close.
+-- Enables section-level affinity for future recommendations.
+-- Applied: yes
+--
+-- CREATE TABLE IF NOT EXISTS section_signals (
+--     user_id     UUID         NOT NULL REFERENCES users(id)   ON DELETE CASCADE,
+--     paper_id    UUID         NOT NULL REFERENCES papers(id)  ON DELETE CASCADE,
+--     section     VARCHAR(100) NOT NULL,
+--     dwell_secs  INT          NOT NULL DEFAULT 0,
+--     visit_count INT          NOT NULL DEFAULT 0,
+--     PRIMARY KEY (user_id, paper_id, section)
+-- );
+-- CREATE INDEX IF NOT EXISTS idx_section_signals_user ON section_signals (user_id);
+
+
+-- ── 2026-04-05  users: OAuth identity + preferences ──────────────────────────
+-- Enables Google/GitHub login and per-user settings persistence.
+-- email/oauth_* are NULL for anonymous users (access-code login).
+-- preferences JSONB keys: topics, reading_mode, pdf_view, theme.
+-- Applied: yes
+--
+-- ALTER TABLE users ADD COLUMN IF NOT EXISTS email          TEXT UNIQUE;
+-- ALTER TABLE users ADD COLUMN IF NOT EXISTS oauth_provider VARCHAR(20);   -- 'google' | 'github'
+-- ALTER TABLE users ADD COLUMN IF NOT EXISTS oauth_sub      TEXT;          -- provider's stable user ID
+-- ALTER TABLE users ADD COLUMN IF NOT EXISTS preferences    JSONB NOT NULL DEFAULT '{}';
+-- ALTER TABLE users ADD CONSTRAINT IF NOT EXISTS uq_users_oauth UNIQUE (oauth_provider, oauth_sub);

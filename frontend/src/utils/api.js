@@ -3,10 +3,10 @@
 
 const BASE = '/api'
 
-async function request(method, path, body) {
+async function request(method, path, body, extraHeaders = {}) {
   const res = await fetch(`${BASE}${path}`, {
     method,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...extraHeaders },
     body: body ? JSON.stringify(body) : undefined,
   })
 
@@ -19,7 +19,7 @@ async function request(method, path, body) {
 }
 
 export const api = {
-  get:    (path)        => request('GET',    path),
-  post:   (path, body)  => request('POST',   path, body),
-  patch:  (path, body)  => request('PATCH',  path, body),
+  get:    (path, headers)       => request('GET',   path, undefined, headers),
+  post:   (path, body, headers) => request('POST',  path, body,      headers),
+  patch:  (path, body, headers) => request('PATCH', path, body,      headers),
 }
